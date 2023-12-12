@@ -1,8 +1,11 @@
 import sys
 import json
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton
 import requests
-import wave
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton
+from PyQt5.QtMultimedia import QSound
+
+from utils.voicevox_utils import Voicevox
+from utils.openjtalk_utils import OpenJTalk
 
 class TextToSpeechGUI(QMainWindow):
     def __init__(self):
@@ -21,39 +24,25 @@ class TextToSpeechGUI(QMainWindow):
         self.generate_button.setGeometry(150, 70, 100, 30)
         self.generate_button.clicked.connect(self.generate_speech)
 
+        self.play_button = QPushButton("再生", self)
+        self.play_button.setGeometry(150, 120, 100, 30)
+        self.play_button.clicked.connect(self.play_sound)
+
+        self.tts_engine = OpenJTalk()
+
     def generate_speech(self):
         text = self.text_entry.text()
-        if text:
-            # VOICEVOXのREST APIエンドポイント
-            host = "127.0.0.1"
-            port = "50021"
-            # リクエストヘッダー
-            headers = {
-                "Content-Type": "application/json"
-            }
-            # リクエストボディ
-            params = (
-                ('text',text),
-                ('speaker', '1')
-            )
-            query = requests.post(f'http://{host}:{port}/audio_query', params=params)
-            try:
-                # POSTリクエストを送信
-                response = requests.post(f'http://{host}:{port}/synthesis', headers=headers, params=params,json=json.dumps(query.json()))
-                # レスポンスの音声データを取得
-                audio_data = response.content
-                # 音声データをファイルに保存
-                wf = wave.open("output.wav", "wb")
-                wf.setnchannels(1)
-                wf.setsampwidth(2)
-                wf.setframerate(24000)
-                wf.writeframes(audio_data)
-                wf.close()
-                # 音声再生などの処理を追加
-                # ...
-            except requests.exceptions.RequestException as e:
-                print("音声生成に失敗しました:", e)
+        wav, sr = self.tts_engine.text2wav(text)
+        self.wav_data = wav
+        print("音声生成完了")
 
+    def play_sound(self):
+        if hasattr(self, 'wav_data'):
+            sound = QSound('tmp/test.wav')
+            print("音声再生")
+            sound.play()
+        
+ 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     gui = TextToSpeechGUI()
