@@ -1,58 +1,84 @@
-import sys
+import tkinter as tk
 import os
-import json
-import requests
-from PyQt5 import QtCore, QtMultimedia
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton
-
-from utils.voicevox_utils import Voicevox
+import numpy as np
+import matplotlib.pyplot as plt
+import simpleaudio
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from scipy.io import wavfile
 from utils.openjtalk_utils import OpenJTalk
+from utils.voicevox_utils import Voicevox
 
-class TextToSpeechGUI(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.app_root = os.path.abspath(os.path.dirname(sys.argv[0]))
-        self.setWindowTitle("テキスト音声合成")
-        self.setGeometry(100, 100, 400, 200)
+class Text2LaughterApp:
+    def __init__(self,master):
+        self.app_dir = os.path.abspath(os.path.dirname(__file__))
+        self.master = master
+        self.master.title("Text to Laughter")
 
-        self.text_label = QLabel(self)
-        self.text_label.setText("テキスト入力:")
-        self.text_label.move(20, 20)
+        self.text_label = tk.Label(master, text="Enter Text:")
+        self.text_label.grid(row=0, column=0, padx=10, pady=10, sticky=tk.W)
+        self.text_entry = tk.Entry(master, width=50)
+        self.text_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        self.text_entry = QLineEdit(self)
-        self.text_entry.setGeometry(120, 20, 260, 30)
+        self.synthesize_button = tk.Button(master, text="Synthesize", command=self.synthesize_text)
+        self.synthesize_button.grid(row=2, column=0, pady=20)
 
-        self.generate_button = QPushButton("音声生成", self)
-        self.generate_button.setGeometry(150, 70, 100, 30)
-        self.generate_button.clicked.connect(self.generate_speech)
+        self.play_button = tk.Button(master, text="Play", command=self.play_sound)
+        self.play_button.grid(row=2, column=1, pady=20)
 
-        self.play_button = QPushButton("再生", self)
-        self.play_button.setGeometry(150, 120, 100, 30)
-        self.play_button.clicked.connect(self.play_sound)
-
-        self.player = QtMultimedia.QMediaPlayer()
+        self.plot_frame = tk.Frame(master)
+        self.plot_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
         self.tts_engine = OpenJTalk()
 
-    def generate_speech(self):
-        text = self.text_entry.text()
-        wav, sr = self.tts_engine.text2wav(text)
-        self.wav_data = wav
-        print("音声生成完了")
+        self.sr, self.wav = wavfile.read(os.path.join(self.app_dir, "tmp","test.wav"))
+
+        self.fig, self.ax = plt.subplots()
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.plot_frame)   
+        self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        self.tts_engine_label = tk.Label(master, text="TTS Engine:")
+        self.tts_engine_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+
+        self.tts_engine_var = tk.StringVar(master)
+        self.tts_engine_var.set("OpenJTalk")
+        self.tts_engine_dropdown = tk.OptionMenu(master, self.tts_engine_var, "OpenJTalk", "VOICEVOX", command=self.update_tts_engine)
+        self.tts_engine_dropdown.grid(row=1, column=1, padx=10, pady=10)
+
+    def update_tts_engine(self, engine):
+        if engine == "OpenJTalk":
+            self.tts_engine = OpenJTalk()
+        elif engine == "VOICEVOX":
+            self.tts_engine = Voicevox()
+
+    def synthesize_text(self):
+        text = self.text_entry.get()
+        self.wav, self.sr = self.tts_engine.text2wav(text)
+        wavfile.write("tmp/test.wav", self.sr, self.wav.astype(np.int16))
+        self.plot_waveform()
+
+    def plot_waveform(self):
+        duration = len(self.wav)/self.sr 
+        time = np.linspace(0., duration, len(self.wav))
+
+        # 波形描画
+        plt.clf()
+        plt.plot(time, self.wav.astype(np.int16)/32768.0)
+        plt.title("Waveform")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+        plt.grid(True)
+
+        # 描画をTkinterに埋め込む
+        self.canvas.draw()
 
     def play_sound(self):
-        self.player.setMedia(
-            QtMultimedia.QMediaContent(
-                QtCore.QUrl.fromLocalFile(
-                    os.path.join(self.app_root,"tmp","test.wav")
-                    )
-                )
-            )
-        print("音声再生完了")
+        play_obj = simpleaudio.play_buffer(self.wav.astype(np.int16), 1, 2, self.sr)
+        play_obj.wait_done()
         
- 
+
+
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    gui = TextToSpeechGUI()
-    gui.show()
-    sys.exit(app.exec_())
+    root = tk.Tk()
+    app = Text2LaughterApp(root)
+    root.mainloop()
+

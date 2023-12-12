@@ -46,8 +46,8 @@ class Voicevox():
             raise ConnectionError("リトライ回数が上限に到達しました")
         return query
     
-
     def synthesis(self,params,query,max_retry=10):
+        query['outputSamplingRate'] = self.sr 
         for _ in range(10):
             response = requests.post(
                 f'http://{self.host}:{self.port}/synthesis', 
@@ -72,14 +72,10 @@ class Voicevox():
         wave_bytes = self.synthesis(params, query)
         with wave.open(io.BytesIO(wave_bytes), "rb") as wav:
             params = wav.getparams()
-            wave_array = np.frombuffer(wav.readframes(wav.getnframes()), dtype=np.int16)/32768.0
-        wave_array = resampling(wave_array, 24000, out_sr=self.sr)
+            wave_array = np.frombuffer(wav.readframes(wav.getnframes()), dtype=np.int16)
         wavfile.write(path, self.sr, wave_array.astype(np.int16))
         return wave_array, self.sr
-    
 
-def resampling(data, sr, out_sr):
-    return librosa.resample(y=data,orig_sr=sr, target_sr=out_sr)
 
 
 
