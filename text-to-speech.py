@@ -1,8 +1,9 @@
 import sys
+import os
 import json
 import requests
+from PyQt5 import QtCore, QtMultimedia
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton
-from PyQt5.QtMultimedia import QSound
 
 from utils.voicevox_utils import Voicevox
 from utils.openjtalk_utils import OpenJTalk
@@ -10,6 +11,7 @@ from utils.openjtalk_utils import OpenJTalk
 class TextToSpeechGUI(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.app_root = os.path.abspath(os.path.dirname(sys.argv[0]))
         self.setWindowTitle("テキスト音声合成")
         self.setGeometry(100, 100, 400, 200)
 
@@ -28,6 +30,8 @@ class TextToSpeechGUI(QMainWindow):
         self.play_button.setGeometry(150, 120, 100, 30)
         self.play_button.clicked.connect(self.play_sound)
 
+        self.player = QtMultimedia.QMediaPlayer()
+
         self.tts_engine = OpenJTalk()
 
     def generate_speech(self):
@@ -37,10 +41,14 @@ class TextToSpeechGUI(QMainWindow):
         print("音声生成完了")
 
     def play_sound(self):
-        if hasattr(self, 'wav_data'):
-            sound = QSound('tmp/test.wav')
-            print("音声再生")
-            sound.play()
+        self.player.setMedia(
+            QtMultimedia.QMediaContent(
+                QtCore.QUrl.fromLocalFile(
+                    os.path.join(self.app_root,"tmp","test.wav")
+                    )
+                )
+            )
+        print("音声再生完了")
         
  
 if __name__ == "__main__":

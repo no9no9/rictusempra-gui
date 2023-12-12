@@ -80,4 +80,7 @@ class Voicevox():
 
 def resampling(data, sr, out_sr):
     return librosa.resample(y=data,orig_sr=sr, target_sr=out_sr)
+
+
+
     
