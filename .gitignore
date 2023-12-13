@@ -1,2 +1,5 @@
 *.wav
 test*
+build*
+dist*
+*.spec
