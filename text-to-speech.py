@@ -20,29 +20,32 @@ class Text2LaughterApp:
         self.text_entry.grid(row=0, column=1, padx=10, pady=10)
 
         self.synthesize_button = tk.Button(master, text="Synthesize", command=self.synthesize_text)
-        self.synthesize_button.grid(row=2, column=0, pady=20)
+        self.synthesize_button.grid(row=0, column=2, padx=10, pady=10)  
+
+        self.convert_button = tk.Button(master, text="Convert", command=self.convert_laughter)
+        self.convert_button.grid(row=1, column=0, pady=10)  
 
         self.play_button = tk.Button(master, text="Play", command=self.play_sound)
-        self.play_button.grid(row=2, column=1, pady=20)
+        self.play_button.grid(row=1, column=1, pady=10)  
 
         self.plot_frame = tk.Frame(master)
-        self.plot_frame.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+        self.plot_frame.grid(row=2, column=0, columnspan=3, padx=10, pady=10)
 
         self.tts_engine = OpenJTalk()
 
         self.sr, self.wav = wavfile.read(os.path.join(self.app_dir, "tmp","test.wav"))
 
-        self.fig, self.ax = plt.subplots()
+        self.fig, self.axes = plt.subplots(2, 1, figsize=(5, 4))
         self.canvas = FigureCanvasTkAgg(self.fig, master=self.plot_frame)   
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.tts_engine_label = tk.Label(master, text="TTS Engine:")
-        self.tts_engine_label.grid(row=1, column=0, padx=10, pady=10, sticky=tk.W)
+        self.tts_engine_label.grid(row=3, column=0, padx=10, pady=10, sticky=tk.W)
 
         self.tts_engine_var = tk.StringVar(master)
         self.tts_engine_var.set("OpenJTalk")
         self.tts_engine_dropdown = tk.OptionMenu(master, self.tts_engine_var, "OpenJTalk", "VOICEVOX", command=self.update_tts_engine)
-        self.tts_engine_dropdown.grid(row=1, column=1, padx=10, pady=10)
+        self.tts_engine_dropdown.grid(row=3, column=1, padx=10, pady=10)
 
     def update_tts_engine(self, engine):
         if engine == "OpenJTalk":
@@ -56,19 +59,20 @@ class Text2LaughterApp:
         wavfile.write("tmp/test.wav", self.sr, self.wav.astype(np.int16))
         self.plot_waveform()
 
+    def convert_laughter(self):
+        pass
+
     def plot_waveform(self):
         duration = len(self.wav)/self.sr 
         time = np.linspace(0., duration, len(self.wav))
 
-        # 波形描画
-        plt.clf()
-        plt.plot(time, self.wav.astype(np.int16)/32768.0)
-        plt.title("Waveform")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Amplitude")
-        plt.grid(True)
-
-        # 描画をTkinterに埋め込む
+        self.axes[0].cla()
+        self.axes[0].plot(time, self.wav.astype(np.int16)/32768.0)
+        self.axes[0].set_title("Waveform")
+        self.axes[0].set_xlabel("Time (s)")
+        self.axes[0].set_ylabel("Amplitude")
+        self.axes[0].grid(True)
+        
         self.canvas.draw()
 
     def play_sound(self):

@@ -3,3 +3,6 @@ test*
 build*
 dist*
 *.spec
+mdoel/
+env/
+__pycache__/
