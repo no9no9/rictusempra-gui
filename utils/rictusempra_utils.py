@@ -1,8 +1,11 @@
+import os
+import torch
 
+from model.rictucempra.fastspeech2 import FastSpeech2
 
 class Rictucempra:
     def __init__(self):
-        pass
+        self.converter = FastSpeech2()
 
     def speech2laughter(self, wav):
         return wav

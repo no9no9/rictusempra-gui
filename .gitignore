@@ -1,8 +1,12 @@
 *.wav
+*.spec
+*.pt
+*.pth
+
 test*
 build*
 dist*
-*.spec
-mdoel/
+
+model/
 env/
 __pycache__/
