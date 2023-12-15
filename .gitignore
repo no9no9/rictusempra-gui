@@ -2,6 +2,7 @@
 *.spec
 *.pt
 *.pth
+*.pyc
 
 test*
 build*

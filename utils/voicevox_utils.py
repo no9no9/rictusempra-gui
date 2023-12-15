@@ -24,7 +24,7 @@ class Voicevox():
         self.query = self.create_audio_query(**self.params)
     
 
-    def create_audio_query(self, text, speaker=1, max_retry=5):
+    def create_audio_query(self, text, speaker, max_retry=5):
         params = dict(
             text=text,
             speaker=speaker,
@@ -63,7 +63,7 @@ class Voicevox():
             raise ConnectionError("リトライ回数が上限に到達しました")    
 
 
-    def text2wav(self, text, path='tmp/test.wav', speaker=1):
+    def text2wav(self, text, path='tmp/test.wav', speaker=4):
         query = self.create_audio_query(text, speaker)
         params = dict(
             text=text,
