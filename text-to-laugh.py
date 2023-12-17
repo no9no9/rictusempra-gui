@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import simpleaudio
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from tkinter import messagebox
 from scipy.io import wavfile
 from utils.openjtalk_utils import OpenJTalk
 from utils.voicevox_utils import Voicevox
@@ -14,20 +15,25 @@ class Text2LaughterApp:
         self.app_dir = os.path.abspath(os.path.dirname(__file__))
         self.master = master
         self.master.title("Text to Laughter")
-        self.master.geometry("650x600")
+        self.master.geometry("650x500")
 
-        # Options
-        self.options_frame = tk.LabelFrame(master,text="Options")
-        self.options_frame.grid(row=0, column=0, padx=1, pady=1, sticky=tk.E+tk.W, columnspan=5, rowspan=1)
+        # Menu
+        self.menubar = tk.Menu(self.master)
+        self.master.config(menu=self.menubar)
 
-        self.tts_engine_var = tk.StringVar(self.options_frame)
-        self.tts_engine_var.set("OpenJTalk")
-        self.tts_engine_dropdown = tk.OptionMenu(self.options_frame, self.tts_engine_var, "OpenJTalk", "VOICEVOX", command=self.update_tts_engine)
-        self.tts_engine_dropdown.grid(row=0, column=0, padx=1, pady=1)
+        self.file_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Export", command=lambda:self.export())
+        self.file_menu.add_command(label="Exit", command=lambda:self.master.quit())
+
+        self.tts_menu = tk.Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="TTS Engine", menu=self.tts_menu)
+        self.tts_menu.add_command(label="OpenJTalk", command=lambda:self.update_tts_engine("OpenJTalk"))
+        self.tts_menu.add_command(label="VOICEVOX", command=lambda:self.update_tts_engine("VOICEVOX"))
 
         # Editors
         self.editor_frame = tk.Frame(master)
-        self.editor_frame.grid(row=1, column=0, padx=10, pady=10, sticky=tk.NSEW, columnspan=4, rowspan=1)
+        self.editor_frame.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NSEW, columnspan=4, rowspan=1)
 
         self.text_label = tk.Label(self.editor_frame, text="Enter Text:")
         self.text_label.grid(row=0, column=0, padx=3, pady=10)
@@ -43,7 +49,7 @@ class Text2LaughterApp:
 
         # canvas and sound button
         self.plot_frame = tk.Frame(master)
-        self.plot_frame.grid(row=2, column=0, columnspan=2, rowspan=1, padx=10, pady=10, sticky=tk.NSEW)
+        self.plot_frame.grid(row=1, column=0, columnspan=2, rowspan=1, padx=10, pady=10, sticky=tk.NSEW)
 
         self.play_button_frame = tk.Frame(self.plot_frame)
         self.play_button_frame.grid(row=0, column=0, columnspan=1,rowspan=2,padx=10, pady=10, sticky=tk.NS)
@@ -107,7 +113,17 @@ class Text2LaughterApp:
         laughter = (self.laughter*np.iinfo(np.int16).max).astype(np.int16)
         play_obj = simpleaudio.play_buffer(laughter, 1, 2, self.sr)
         play_obj.wait_done()
-        
+
+    def export(self):
+        save_dir = tk.filedialog.askdirectory(initialdir = self.app_dir)
+        if save_dir == "":
+            return
+        os.makedirs(os.path.join(save_dir, "speech"), exist_ok=True)
+        os.makedirs(os.path.join(save_dir, "laughter"), exist_ok=True)
+        text = self.text_entry.get()
+        wavfile.write(os.path.join(save_dir, "speech", text+".wav"), self.sr, self.wav.astype(np.int16))
+        wavfile.write(os.path.join(save_dir, "laughter", text+".wav"), self.sr, (self.laughter*np.iinfo(np.int16).max).astype(np.int16))
+        messagebox.showinfo("Export", "Exported to {}".format(save_dir))
 
 if __name__ == "__main__":
     root = tk.Tk()
