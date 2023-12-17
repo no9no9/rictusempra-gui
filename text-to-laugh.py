@@ -165,20 +165,21 @@ class Text2LaughterApp:
         # create frame
         self.vox_frame = tk.Frame(self.vox_dialog)
         self.vox_frame.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NSEW)
+        
         # 話者を選択するコンボボックス
-        speaker_combobox = ttk.Combobox(self.vox_dialog, values=[data["name"] for data in self.tts_engine.speakers], state="readonly")
+        speaker_combobox = ttk.Combobox(self.vox_frame, values=[data["name"] for data in self.tts_engine.speakers], state="readonly")
         speaker_combobox.grid(row=0, column=0, padx=10, pady=10)
         speaker_combobox.bind("<<ComboboxSelected>>", on_speaker_select)
+        
         # スタイルを選択するコンボボックス
-        style_combobox = ttk.Combobox(self.vox_dialog, values=[], state="readonly")
+        style_combobox = ttk.Combobox(self.vox_frame, values=[], state="readonly")
         style_combobox.grid(row=1, column=0, padx=10, pady=10)
         style_combobox.bind("<<ComboboxSelected>>", on_style_select)
 
         # OKボタン
-        ok_button = tk.Button(self.vox_dialog, text="OK", command=self.vox_dialog.destroy)
+        ok_button = tk.Button(self.vox_frame, text="OK", command=self.vox_dialog.destroy)
         ok_button.grid(row=2, column=0, padx=10, pady=10)
         self.vox_dialog.mainloop()
-
 
 
 if __name__ == "__main__":
