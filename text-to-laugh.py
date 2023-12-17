@@ -64,7 +64,7 @@ class Text2LaughterApp:
         self.play_button2 = tk.Button(self.play_button_frame, text="Laugh", command=self.play_laughter)
         self.play_button2.grid(row=1, column=0, padx=10, pady=10, sticky=tk.EW)
 
-        self.scale_bar = tk.Scale(self.play_button_frame,length=200, variable=self.laughter_style,from_=-585, to=584,command=self.convert_laughter_handler)
+        self.scale_bar = tk.Scale(self.play_button_frame,length=200, variable=self.laughter_style,from_=-585, to=584,command=self.convert_laughter)
         self.scale_bar.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NSEW)
         self.style_entry = tk.Spinbox(self.play_button_frame, textvariable=self.laughter_style,from_=-585, to=584, width=10, increment=1, command=self.convert_laughter)
         self.style_entry.grid(row=3, column=0, padx=10, pady=10, sticky=tk.NSEW)
@@ -93,7 +93,7 @@ class Text2LaughterApp:
         self.sr, self.wav = wavfile.read(os.path.join(self.app_dir, "tmp","test.wav"))
         self.plot_waveform(self.wav, 0)
 
-    def convert_laughter(self):
+    def convert_laughter(self, event=None):
         self.laughter = self.rictusempra.speech2laughter(speech=self.wav, style=self.laughter_style.get())
         self.plot_waveform(self.laughter, 1)
 
@@ -135,9 +135,6 @@ class Text2LaughterApp:
         wavfile.write(os.path.join(save_dir, "speech", text+".wav"), self.sr, self.wav.astype(np.int16))
         wavfile.write(os.path.join(save_dir, "laughter", text+".wav"), self.sr, (self.laughter*np.iinfo(np.int16).max).astype(np.int16))
         messagebox.showinfo("Export", "Exported to {}".format(save_dir))
-
-    def convert_laughter_handler(self, event):
-        self.convert_laughter()
 
 if __name__ == "__main__":
     root = tk.Tk()
