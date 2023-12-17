@@ -73,7 +73,6 @@ class Voicevox():
         with wave.open(io.BytesIO(wave_bytes), "rb") as wav:
             params = wav.getparams()
             wave_array = np.frombuffer(wav.readframes(wav.getnframes()), dtype=np.int16)
-        wavfile.write(path, self.sr, wave_array.astype(np.int16))
         return wave_array, self.sr
 
 

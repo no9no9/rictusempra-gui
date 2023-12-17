@@ -5,9 +5,9 @@ import onnxruntime
 
 class Rictucempra:
     def __init__(self):
-        self.extractor = onnxruntime.InferenceSession("model/wav2vec/wav2vec.onnx")
-        self.converter = onnxruntime.InferenceSession("model/rictucempra/rictucempra.onnx")
-        self.vocoder = onnxruntime.InferenceSession("model/vocoder/vocoder.onnx")
+        self.extractor = onnxruntime.InferenceSession(os.path.join("model","wav2vec","wav2vec.onnx"))
+        self.converter = onnxruntime.InferenceSession(os.path.join("model","rictucempra","rictucempra.onnx"))
+        self.vocoder = onnxruntime.InferenceSession(os.path.join("model","vocoder","vocoder.onnx"))
         self.default_style = np.array([112], dtype=np.int64)
 
     def speech2laughter(self, speech, style=112):
