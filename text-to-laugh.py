@@ -3,12 +3,14 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import simpleaudio
+from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import messagebox
 from scipy.io import wavfile
 from utils.openjtalk_utils import OpenJTalk
 from utils.voicevox_utils import Voicevox
 from utils.rictusempra_utils import Rictucempra
+from utils.plot_utils import plot_spectrogram
 
 class Text2LaughterApp:
     def __init__(self,master):
@@ -19,6 +21,8 @@ class Text2LaughterApp:
 
         self.laughter_style = tk.IntVar()
         self.laughter_style.set(112)
+
+        self.vox_speaker_styles = None
 
         # Create tmp directory
         os.makedirs(os.path.join(self.app_dir, "tmp"), exist_ok=True)
@@ -33,7 +37,7 @@ class Text2LaughterApp:
         self.file_menu.add_command(label="Exit", command=lambda:self.master.quit())
 
         self.tts_menu = tk.Menu(self.menubar, tearoff=0)
-        self.menubar.add_cascade(label="TTS Engine", menu=self.tts_menu)
+        self.menubar.add_cascade(label="Setting", menu=self.tts_menu)
         self.tts_menu.add_command(label="OpenJTalk", command=lambda:self.update_tts_engine("OpenJTalk"))
         self.tts_menu.add_command(label="VOICEVOX", command=lambda:self.update_tts_engine("VOICEVOX"))
 
@@ -64,10 +68,10 @@ class Text2LaughterApp:
         self.play_button2 = tk.Button(self.play_button_frame, text="Laugh", command=self.play_laughter)
         self.play_button2.grid(row=1, column=0, padx=10, pady=10, sticky=tk.EW)
 
-        self.scale_bar = tk.Scale(self.play_button_frame,length=200, variable=self.laughter_style,from_=-585, to=584,command=self.convert_laughter)
-        self.scale_bar.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NSEW)
         self.style_entry = tk.Spinbox(self.play_button_frame, textvariable=self.laughter_style,from_=-585, to=584, width=10, increment=1, command=self.convert_laughter)
-        self.style_entry.grid(row=3, column=0, padx=10, pady=10, sticky=tk.NSEW)
+        self.style_entry.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NSEW)
+        self.scale_bar = tk.Scale(self.play_button_frame,length=200, variable=self.laughter_style,from_=-585, to=584,command=self.convert_laughter)
+        self.scale_bar.grid(row=3, column=0, padx=10, pady=10, sticky=tk.NSEW)
 
         self.canvas_frame = tk.Frame(self.plot_frame)
         self.canvas_frame.grid(row=0, column=1, padx=10, pady=10, sticky=tk.NSEW)
@@ -76,7 +80,7 @@ class Text2LaughterApp:
         self.canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         self.sr, self.wav = None, None
-        self.tts_engine = OpenJTalk()
+        self.update_tts_engine("OpenJTalk")
         self.rictusempra = Rictucempra()
 
     def update_tts_engine(self, engine):
@@ -84,6 +88,12 @@ class Text2LaughterApp:
             self.tts_engine = OpenJTalk()
         elif engine == "VOICEVOX":
             self.tts_engine = Voicevox()
+            self.vox_menu = tk.Menu(self.menubar, tearoff=0)
+            self.menubar.add_cascade(label="VOICEVOX", menu=self.vox_menu)
+            self.vox_menu.add_command(label="Select Speaker", command=lambda:self.update_vox_speaker())
+
+
+
 
     def synthesize_text(self):
         self.clear_plot()
@@ -98,17 +108,10 @@ class Text2LaughterApp:
         self.plot_waveform(self.laughter, 1)
 
     def plot_waveform(self, x, idx):
-        duration = len(x)/self.sr 
-        time = np.linspace(0., duration, len(x))
         if x.dtype == np.int16:
             x = x.astype(np.float32)/np.iinfo(np.int16).max
-
         self.axes[idx].cla()
-        self.axes[idx].plot(time, x)
-        self.axes[idx].set_ylabel("Amplitude")
-        self.axes[idx].set_xlim(0, duration)
-        self.axes[idx].grid(True)
-
+        plot_spectrogram(self.axes[idx], x, self.sr)
         self.canvas.draw()
     
     def clear_plot(self):
@@ -135,6 +138,48 @@ class Text2LaughterApp:
         wavfile.write(os.path.join(save_dir, "speech", text+".wav"), self.sr, self.wav.astype(np.int16))
         wavfile.write(os.path.join(save_dir, "laughter", text+".wav"), self.sr, (self.laughter*np.iinfo(np.int16).max).astype(np.int16))
         messagebox.showinfo("Export", "Exported to {}".format(save_dir))
+
+
+    def update_vox_speaker(self):
+        def on_speaker_select(event):
+            selected_index = speaker_combobox.current()
+            selected_speaker = self.tts_engine.speakers[selected_index]
+            # スタイルのリストを取得
+            style_list = selected_speaker.get('styles', [])
+            # スタイルコンボボックスの値を更新
+            self.vox_speaker_styles = selected_speaker
+            style_combobox['values'] = [style['name'] for style in style_list]
+        
+        def on_style_select(event):
+            selected_index = style_combobox.current()
+            self.tts_engine.speaker = self.vox_speaker_styles['styles'][selected_index]['id']
+
+        # create dialog
+        self.vox_dialog = tk.Toplevel()
+        self.vox_dialog.title("Select Speaker")
+        self.vox_dialog.geometry("300x200")
+        self.vox_dialog.grab_set()
+        self.vox_dialog.focus_set()
+        self.vox_dialog.transient(self.master)
+        
+        # create frame
+        self.vox_frame = tk.Frame(self.vox_dialog)
+        self.vox_frame.grid(row=0, column=0, padx=10, pady=10, sticky=tk.NSEW)
+        # 話者を選択するコンボボックス
+        speaker_combobox = ttk.Combobox(self.vox_dialog, values=[data["name"] for data in self.tts_engine.speakers], state="readonly")
+        speaker_combobox.grid(row=0, column=0, padx=10, pady=10)
+        speaker_combobox.bind("<<ComboboxSelected>>", on_speaker_select)
+        # スタイルを選択するコンボボックス
+        style_combobox = ttk.Combobox(self.vox_dialog, values=[], state="readonly")
+        style_combobox.grid(row=1, column=0, padx=10, pady=10)
+        style_combobox.bind("<<ComboboxSelected>>", on_style_select)
+
+        # OKボタン
+        ok_button = tk.Button(self.vox_dialog, text="OK", command=self.vox_dialog.destroy)
+        ok_button.grid(row=2, column=0, padx=10, pady=10)
+        self.vox_dialog.mainloop()
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()
