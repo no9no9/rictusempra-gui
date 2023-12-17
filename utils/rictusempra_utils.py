@@ -8,11 +8,11 @@ class Rictucempra:
         self.extractor = onnxruntime.InferenceSession("model/wav2vec/wav2vec.onnx")
         self.converter = onnxruntime.InferenceSession("model/rictucempra/rictucempra.onnx")
         self.vocoder = onnxruntime.InferenceSession("model/vocoder/vocoder.onnx")
-        self.default_speaker = np.array([112], dtype=np.int64)
+        self.default_style = np.array([112], dtype=np.int64)
 
-    def speech2laughter(self, speech):
+    def speech2laughter(self, speech, style=112):
         max_pow = np.max(np.abs(speech))
-        laughter = self.mel2wav(self.vector2mel(self.wav2vector(speech)))
+        laughter = self.mel2wav(self.vector2mel(self.wav2vector(speech), speaker=style))
         laughter = (laughter / np.max(np.abs(laughter))) * (max_pow/np.iinfo(np.int16).max)
         return laughter
     
@@ -24,7 +24,7 @@ class Rictucempra:
     def vector2mel(self, vec, speaker=None):
         frame_len = vec.shape[1]
         if speaker is None:
-            speaker = self.default_speaker
+            speaker = self.default_style
         else:
             speaker = np.array([speaker], dtype=np.int64)
         vec = torch.from_numpy(vec)

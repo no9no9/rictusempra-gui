@@ -17,6 +17,12 @@ class Text2LaughterApp:
         self.master.title("Text to Laughter")
         self.master.geometry("650x500")
 
+        self.laughter_style = tk.IntVar()
+        self.laughter_style.set(112)
+
+        # Create tmp directory
+        os.makedirs(os.path.join(self.app_dir, "tmp"), exist_ok=True)
+
         # Menu
         self.menubar = tk.Menu(self.master)
         self.master.config(menu=self.menubar)
@@ -52,11 +58,16 @@ class Text2LaughterApp:
         self.plot_frame.grid(row=1, column=0, columnspan=2, rowspan=1, padx=10, pady=10, sticky=tk.NSEW)
 
         self.play_button_frame = tk.Frame(self.plot_frame)
-        self.play_button_frame.grid(row=0, column=0, columnspan=1,rowspan=2,padx=10, pady=10, sticky=tk.NS)
+        self.play_button_frame.grid(row=0, column=0, columnspan=1,rowspan=4,padx=10, pady=10, sticky=tk.NS)
         self.play_button1 = tk.Button(self.play_button_frame, text="Speech", command=self.play_speech)
-        self.play_button1.grid(row=0, column=0, padx=10, pady=10, sticky=tk.E)
+        self.play_button1.grid(row=0, column=0, padx=10, pady=10, sticky=tk.EW)
         self.play_button2 = tk.Button(self.play_button_frame, text="Laugh", command=self.play_laughter)
-        self.play_button2.grid(row=1, column=0, padx=10, pady=10, sticky=tk.E)
+        self.play_button2.grid(row=1, column=0, padx=10, pady=10, sticky=tk.EW)
+
+        self.scale_bar = tk.Scale(self.play_button_frame,length=200, variable=self.laughter_style,from_=-585, to=584,command=self.convert_laughter_handler)
+        self.scale_bar.grid(row=2, column=0, padx=10, pady=10, sticky=tk.NSEW)
+        self.style_entry = tk.Spinbox(self.play_button_frame, textvariable=self.laughter_style,from_=-585, to=584, width=10, increment=1, command=self.convert_laughter)
+        self.style_entry.grid(row=3, column=0, padx=10, pady=10, sticky=tk.NSEW)
 
         self.canvas_frame = tk.Frame(self.plot_frame)
         self.canvas_frame.grid(row=0, column=1, padx=10, pady=10, sticky=tk.NSEW)
@@ -83,14 +94,14 @@ class Text2LaughterApp:
         self.plot_waveform(self.wav, 0)
 
     def convert_laughter(self):
-        self.laughter = self.rictusempra.speech2laughter(self.wav)
+        self.laughter = self.rictusempra.speech2laughter(speech=self.wav, style=self.laughter_style.get())
         self.plot_waveform(self.laughter, 1)
 
     def plot_waveform(self, x, idx):
         duration = len(x)/self.sr 
         time = np.linspace(0., duration, len(x))
         if x.dtype == np.int16:
-            x = x.astype(np.float32)/32768.0
+            x = x.astype(np.float32)/np.iinfo(np.int16).max
 
         self.axes[idx].cla()
         self.axes[idx].plot(time, x)
@@ -124,6 +135,9 @@ class Text2LaughterApp:
         wavfile.write(os.path.join(save_dir, "speech", text+".wav"), self.sr, self.wav.astype(np.int16))
         wavfile.write(os.path.join(save_dir, "laughter", text+".wav"), self.sr, (self.laughter*np.iinfo(np.int16).max).astype(np.int16))
         messagebox.showinfo("Export", "Exported to {}".format(save_dir))
+
+    def convert_laughter_handler(self, event):
+        self.convert_laughter()
 
 if __name__ == "__main__":
     root = tk.Tk()
