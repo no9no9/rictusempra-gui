@@ -1,4 +1,3 @@
-# memo
+# メモ
 
-1. voicevox rest api 
-2. torch model load
+訓練済みの発話スタイル変換モデルをGUIで使用するためのアプリケーション
